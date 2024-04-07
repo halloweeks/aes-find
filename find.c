@@ -579,13 +579,15 @@ bool aes192_detect_enc(const unsigned int *data) {
 bool aes192_detect_dec(const unsigned int *data) {
 	unsigned int roundkey[52];
 	
-	roundkey[0] = data[56];
-	roundkey[1] = data[57];
-	roundkey[2] = data[58];
-	roundkey[3] = data[59];
-	roundkey[4] = data[50];
-	roundkey[5] = data[51];
+	roundkey[0] = data[48];
+	roundkey[1] = data[49];
+	roundkey[2] = data[50];
+	roundkey[3] = data[51];
 	
+	
+	roundkey[4] = data[44];
+	roundkey[5] = data[45];
+
 	for (unsigned char index = 6; index < 52; index += 6) {
 		roundkey[index] = roundkey[index - 6] ^ 
 			(Te4[(roundkey[index - 1] >> 16) & 0xff] & 0xff000000) ^ 
@@ -711,9 +713,20 @@ bool aes256_detect_dec(const unsigned int *data) {
 	roundkey[2] = data[54];
 	roundkey[3] = data[55];
 	roundkey[4] = data[56];
-	roundkey[5] = data[57];;
+	roundkey[5] = data[57];
 	roundkey[6] = data[58];
 	roundkey[7] = data[59];
+	
+	/*
+	roundkey[0] = data[56];
+	roundkey[1] = data[57];
+	roundkey[2] = data[58];
+	roundkey[3] = data[59];
+	roundkey[4] = data[52];
+	roundkey[5] = data[53];
+	roundkey[6] = data[54];
+	roundkey[7] = data[55];
+	*/
 	
 	for (unsigned char index = 8; index < 60; index += 8) {
 		roundkey[index] = roundkey[index - 8] ^ 
