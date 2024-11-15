@@ -798,6 +798,13 @@ static uint32_t setup_mix(const uint32_t temp) {
 		Te3[Td4[(temp >> 0) & 0xff] & 0xff];
 }
 
+uint32_t reverse(uint32_t value) {
+	return ((value & 0x000000FF) << 24) |  // Move byte 0 to byte 3
+           ((value & 0x0000FF00) << 8)  |  // Move byte 1 to byte 2
+           ((value & 0x00FF0000) >> 8)  |  // Move byte 2 to byte 1
+           ((value & 0xFF000000) >> 24);   // Move byte 3 to byte 0
+}
+
 // Detection aes 128 encryption key
 bool aes128_detect_enc(const uint32_t *data) {
 	uint32_t roundkey[44];
@@ -820,6 +827,35 @@ bool aes128_detect_enc(const uint32_t *data) {
 	
 	for (int index = 0; index < 44; index++) {
 		if (roundkey[index] != data[index]) {
+			return false;
+		}
+	}
+	
+	return true;
+}
+
+// Detection aes 128 encryption key
+bool aes128_detect_encF(const uint32_t *data) {
+	uint32_t roundkey[44];
+	
+	roundkey[0] = reverse(data[0]);
+	roundkey[1] = reverse(data[1]);
+	roundkey[2] = reverse(data[2]);
+	roundkey[3] = reverse(data[3]);
+	
+	for (unsigned char index = 4; index < 44; index += 4) {
+		roundkey[index] = roundkey[index - 4] ^ 
+			(Te4[(roundkey[index - 1] >> 16) & 0xff] & 0xff000000) ^ 
+			(Te4[(roundkey[index - 1] >>  8) & 0xff] & 0x00ff0000) ^ 
+			(Te4[(roundkey[index - 1] >>  0) & 0xff] & 0x0000ff00) ^ 
+			(Te4[(roundkey[index - 1] >> 24) & 0xff] & 0x000000ff) ^ rcon[index / 4 - 1];
+		roundkey[index + 1] = roundkey[index - 3] ^ roundkey[index];
+		roundkey[index + 2] = roundkey[index - 2] ^ roundkey[index + 1];
+		roundkey[index + 3] = roundkey[index - 1] ^ roundkey[index + 2];
+	}
+	
+	for (int index = 0; index < 44; index++) {
+		if (roundkey[index] != reverse(data[index])) {
 			return false;
 		}
 	}
@@ -1159,6 +1195,15 @@ void find_keys(const uint64_t address, const uint8_t *buffer) {
 		printf("[%p] Found AES-256 decryption key: 0x", (void*)address);
 		printf("%08X%08X%08X%08X%08X%08X%08X%08X\n", data[56], data[57], data[58], data[59], setup_mix(data[52]), setup_mix(data[53]), setup_mix(data[54]), setup_mix(data[55]));
 	}
+	
+	if (aes128_detect_encF(data)) {
+		printf("[%p] Found AES-128 encryption key: 0x", (void*)address);
+		for (int index = 0; index < 4; index++) {
+			printf("%X", reverse(data[index]));
+		}
+		printf("\n");
+	}
+	
 }
 
 int main(int argc, const char *argv[]) {
