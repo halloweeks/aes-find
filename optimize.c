@@ -792,7 +792,6 @@ bool aes256_detect_encR(const uint32_t *data) {
 	return true;
 }
 
-
 // detect aes 256 encryption key 
 // fully unrolled code
 bool aes256_detect_encU(const unsigned int *data) {
@@ -1239,11 +1238,11 @@ bool aes256_detect_dec(const unsigned int *data) {
     return true;
 }
 
-void find_keys(void *address, const uint8_t *buffer) {
+void find_keys(size_t addr, const uint8_t *buffer) {
 	uint32_t *data = (uint32_t*)buffer;
 	
 	if (aes256_detect_encU(data)) {
-		printf("[%p] Found AES-256 encryption key: 0x%08X%08X%08X%08X%08X%08X%08X%08X\n", (void*)address, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+		printf("[%p] Found AES-256 encryption key: 0x%08X%08X%08X%08X%08X%08X%08X%08X\n", (void*)addr, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
 	} 
 	
 	/*
@@ -1303,7 +1302,8 @@ int main(int argc, const char *argv[]) {
 	uint32_t remaining = st.st_size;
 	
 	while (remaining--) {
-		find_keys((void*)0, ptr++);
+		find_keys(ptr - data, ptr);
+		ptr++;
 	}
 	
 	if (munmap(data, st.st_size) == -1) {
